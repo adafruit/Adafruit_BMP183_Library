@@ -15,7 +15,12 @@
  ****************************************************/
 
 #include "Adafruit_BMP183.h"
-#include <util/delay.h>
+#ifdef __AVR__
+    #include <util/delay.h>
+#endif
+#ifdef __SAM3X8E__
+    #define _delay_ms(t) delay(t)
+#endif
 #include <SPI.h>
 
 
@@ -39,7 +44,12 @@ boolean Adafruit_BMP183::begin(bmp183_mode_t mode) {
   if (_clk == -1) {
     SPI.begin();
     SPI.setDataMode(SPI_MODE0);
+#ifdef __AVR__
     SPI.setClockDivider(SPI_CLOCK_DIV16);
+#endif
+#ifdef __SAM3X8E__
+      SPI.setClockDivider(11); // 8-ish MHz (full! speed!)
+#endif
   } else {
     pinMode(_clk, OUTPUT);
     digitalWrite(_clk, HIGH);

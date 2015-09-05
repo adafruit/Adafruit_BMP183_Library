@@ -68,22 +68,63 @@
 
 class Adafruit_BMP183 {
  public:
-  Adafruit_BMP183(int8_t SPICS);
+  explicit Adafruit_BMP183(int8_t SPICS);
   Adafruit_BMP183(int8_t SPICLK, int8_t SPIMISO, int8_t SPIMOSI, int8_t SPICS);
 
   boolean begin(bmp183_mode_t mode = BMP183_MODE_ULTRAHIGHRES);  // by default go highres
+  
+  // getTemperature() blocks for 5ms (delay needed for BMP183 to complete
+  // its measurement).
   float getTemperature(void);
-  int32_t getPressure(void);
+  // Async variant which returns immediately after initiating temperature
+  // reading. Returns number of milliseconds caller must wait before finishing
+  // the operation.  Note: after calling startGetTemperature(), do not call
+  // any other methods on this object before calling finishGetTemperature(), 
+  uint8_t startGetTemperature(void);  // Returns number of milliseconds.
+  float finishGetTemperature(void);
+  
+  // getPressure() blocks for up to 26ms (delay needed for BMP183 to
+  // complete its measurement).
+  int32_t getPressure(void);  // Units: Pa.
+  // Async variant; see startGetTemperature().
+  uint8_t startGetPressure(void);
+  int32_t finishGetPressure(void);
+  
+  // getPressure() uses a temperature measurement as part of the
+  // calibration correction; this adds an additional 5ms to the delay.
+  // Many applications periodically measure temperature in addition to
+  // pressure; in such cases getPressure() can reuse the most
+  // recent temperature measurement.
+  // Call this after begin().
+  void reuseTemperature(bool reuseTemp) {  // Initially false.
+  	_reuse_temp = reuseTemp;
+  }
+
+  // Read pressure and compute altitude in meters.  sealevelPressure arg
+  // must be in Pa.
   float getAltitude(float sealevelPressure = 101325); // std atmosphere
+  // Given a getPressure() reading, compute altitude.  Arguments must be in
+  // same units.
+  static float computeAltitude(float pressure, float sealevelPressure = 101325);
+  
   uint16_t readRawTemperature(void);
   uint32_t readRawPressure(void);
   
  private:
+  uint8_t startReadRawTemperature(void);
+  uint16_t finishReadRawTemperature(void);
+  uint8_t startReadRawPressure(void);
+  uint32_t finishReadRawPressure(void);
+  
   uint8_t SPIxfer(uint8_t x);
   uint8_t read8(uint8_t addr);
   uint16_t read16(uint8_t addr);
   void write8(uint8_t addr, uint8_t data);
 
+  // Most recent temperature reading, needed for applying calibration when
+  // reading pressure.
+  bool _reuse_temp;
+  uint16_t _ut_cache;
 
   int8_t _cs, _clk, _miso, _mosi;
 
@@ -92,6 +133,5 @@ class Adafruit_BMP183 {
   int16_t ac1, ac2, ac3, b1, b2, mb, mc, md;
   uint16_t ac4, ac5, ac6;
 };
-
 
 #endif //  ADAFRUIT_BMP183_H

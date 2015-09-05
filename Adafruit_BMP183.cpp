@@ -23,32 +23,30 @@
 #endif
 #include <SPI.h>
 
-
 Adafruit_BMP183::Adafruit_BMP183(int8_t SPICS ) {
   _cs = SPICS;
-  _clk = _miso = _mosi = -1; 
+  _clk = _miso = _mosi = -1;
 }
 
 Adafruit_BMP183::Adafruit_BMP183(int8_t SPICLK, 
-				 int8_t SPIMISO, 
-				 int8_t SPIMOSI, 
-				 int8_t SPICS) {
+                                 int8_t SPIMISO, 
+                                 int8_t SPIMOSI, 
+                                 int8_t SPICS) {
   _cs = SPICS;
   _clk = SPICLK;
   _miso = SPIMISO;
   _mosi = SPIMOSI;
 }
 
-
 boolean Adafruit_BMP183::begin(bmp183_mode_t mode) {
   if (_clk == -1) {
     SPI.begin();
-    SPI.setDataMode(SPI_MODE0);
+    SPI.setDataMode(SPI_MODE3);
 #ifdef __AVR__
     SPI.setClockDivider(SPI_CLOCK_DIV16);
 #endif
 #ifdef __SAM3X8E__
-      SPI.setClockDivider(11); // 8-ish MHz (full! speed!)
+    SPI.setClockDivider(11); // 8-ish MHz (full! speed!)
 #endif
   } else {
     pinMode(_clk, OUTPUT);
@@ -60,16 +58,13 @@ boolean Adafruit_BMP183::begin(bmp183_mode_t mode) {
   pinMode(_cs, OUTPUT);
   digitalWrite(_cs, HIGH);
 
-
   /* Mode boundary check */
-  if ((mode > BMP183_MODE_ULTRAHIGHRES) || (mode < 0))
-  {
+  if (mode > BMP183_MODE_ULTRAHIGHRES || mode < 0) {
     mode = BMP183_MODE_ULTRAHIGHRES;
   }
 
   /* Set the mode indicator */
   oversampling = mode;
-
 
   if (read8(0xD0) != 0x55) return false;
 
@@ -102,58 +97,76 @@ boolean Adafruit_BMP183::begin(bmp183_mode_t mode) {
   Serial.print("mc = "); Serial.println(mc, DEC);
   Serial.print("md = "); Serial.println(md, DEC);
 #endif
+  // Don't reuse temperature unless caller enables; indicate that no
+  // temperature reading has occurred yet.
+  _reuse_temp = false;
+  _ut_cache = 0;
+  return true;
 }
 
 uint16_t Adafruit_BMP183::readRawTemperature(void) {
+  _delay_ms(startReadRawTemperature());
+  return finishReadRawTemperature();
+}
+
+uint8_t Adafruit_BMP183::startReadRawTemperature(void) {
   write8(BMP183_REGISTER_CONTROL, BMP183_REGISTER_READTEMPCMD);
-  _delay_ms(5);
+  return 5;  // Needed delay.
+}
+uint16_t Adafruit_BMP183::finishReadRawTemperature(void) {
 #if BMP183_DEBUG == 1
   Serial.print("Raw temp: "); Serial.println(read16(BMP183_REGISTER_TEMPDATA));
 #endif
-  return read16(BMP183_REGISTER_TEMPDATA);
+  // Remember temperature reading for pressure calibration.
+  _ut_cache = read16(BMP183_REGISTER_TEMPDATA);
+  return _ut_cache;
 }
 
 uint32_t Adafruit_BMP183::readRawPressure(void) {
-  uint32_t raw;
+  _delay_ms(startReadRawPressure());
+  return finishReadRawPressure();
+}
 
-  write8(BMP183_REGISTER_CONTROL, BMP183_REGISTER_READPRESSURECMD + (oversampling << 6));
-
-  if (oversampling == BMP183_MODE_ULTRALOWPOWER) 
-    _delay_ms(5);
-  else if (oversampling == BMP183_MODE_STANDARD) 
-    _delay_ms(8);
-  else if (oversampling == BMP183_MODE_HIGHRES) 
-    _delay_ms(14);
-  else 
-    _delay_ms(26);
-
-  raw = read16(BMP183_REGISTER_PRESSUREDATA);
-
+uint8_t Adafruit_BMP183::startReadRawPressure(void) {
+  write8(BMP183_REGISTER_CONTROL,
+         BMP183_REGISTER_READPRESSURECMD + (oversampling << 6));
+  // Return the needed delay.
+  switch(oversampling) {
+    case BMP183_MODE_ULTRALOWPOWER:
+      return 5;
+    case BMP183_MODE_STANDARD:
+      return 8;
+    case BMP183_MODE_HIGHRES:
+      return 14;
+    default:
+      return 26;
+  }
+}
+uint32_t Adafruit_BMP183::finishReadRawPressure(void) {
+  uint32_t raw = read16(BMP183_REGISTER_PRESSUREDATA);
   raw <<= 8;
   raw |= read8(BMP183_REGISTER_PRESSUREDATA+2);
   raw >>= (8 - oversampling);
-
- /* this pull broke stuff, look at it later?
-  if (oversampling==0) {
-    raw <<= 8;
-    raw |= read8(BMP183_PRESSUREDATA+2);
-    raw >>= (8 - oversampling);
-  }
- */
-
 #if BMP183_DEBUG == 1
   Serial.print("Raw pressure: "); Serial.println(raw);
 #endif
   return raw;
 }
 
-
 int32_t Adafruit_BMP183::getPressure(void) {
+  _delay_ms(startGetPressure());
+  return finishGetPressure();
+}
+
+uint8_t Adafruit_BMP183::startGetPressure(void) {
+  return startReadRawPressure();
+}
+int32_t Adafruit_BMP183::finishGetPressure(void) {
   int32_t UT, UP, B3, B5, B6, X1, X2, X3, p;
   uint32_t B4, B7;
-
-  UT = readRawTemperature();
-  UP = readRawPressure();
+  
+  UP = finishReadRawPressure();
+  UT = (_reuse_temp && _ut_cache != 0) ? _ut_cache : readRawTemperature();
 
 #if BMP183_DEBUG == 1
   // use datasheet numbers!
@@ -173,9 +186,9 @@ int32_t Adafruit_BMP183::getPressure(void) {
 #endif
 
   // do temperature calculations
-  X1=(UT-(int32_t)(ac6))*((int32_t)(ac5))/pow(2,15);
-  X2=((int32_t)mc*pow(2,11))/(X1+(int32_t)md);
-  B5=X1 + X2;
+  X1 = ((UT-(int32_t)ac6)*((int32_t)ac5)) >> 15;
+  X2 = ((int32_t)mc << 11) / (X1+(int32_t)md);
+  B5 = X1 + X2;
 
 #if BMP183_DEBUG == 1
   Serial.print("X1 = "); Serial.println(X1);
@@ -232,12 +245,19 @@ int32_t Adafruit_BMP183::getPressure(void) {
   return p;
 }
 
-
 float Adafruit_BMP183::getTemperature(void) {
+  _delay_ms(startGetTemperature());
+  return finishGetTemperature();
+}
+
+uint8_t Adafruit_BMP183::startGetTemperature(void) {
+  return startReadRawTemperature();
+}
+float Adafruit_BMP183::finishGetTemperature(void) {
   int32_t UT, X1, X2, B5;     // following ds convention
   float temp;
 
-  UT = readRawTemperature();
+  UT = finishReadRawTemperature();
 
 #if BMP183_DEBUG == 1
   // use datasheet numbers!
@@ -249,26 +269,22 @@ float Adafruit_BMP183::getTemperature(void) {
 #endif
 
   // step 1
-  X1 = (UT - (int32_t)ac6) * ((int32_t)ac5) / pow(2,15);
-  X2 = ((int32_t)mc * pow(2,11)) / (X1+(int32_t)md);
+  X1 = ((UT-(int32_t)ac6)*((int32_t)ac5)) >> 15;
+  X2 = ((int32_t)mc << 11) / (X1+(int32_t)md);
   B5 = X1 + X2;
-  temp = (B5+8)/pow(2,4);
+  temp = (B5+8)/16;
   temp /= 10;
   
   return temp;
 }
 
 float Adafruit_BMP183::getAltitude(float sealevelPressure) {
-  float altitude;
-
-  float pressure = getPressure(); // in Si units for Pascal
-  pressure /= 100;
-
-  altitude = 44330 * (1.0 - pow(pressure /sealevelPressure,0.1903));
-
-  return altitude;
+  return computeAltitude(getPressure(), sealevelPressure);
 }
-
+float Adafruit_BMP183::computeAltitude(float pressure,
+                                       float sealevelPressure) {
+  return 44330 * (1.0 - pow(pressure/sealevelPressure, 0.1903));
+}
 
 /*********************************************************************/
 
@@ -289,7 +305,6 @@ uint8_t Adafruit_BMP183::SPIxfer(uint8_t x) {
     return reply;
   }
 }
-
 
 uint8_t Adafruit_BMP183::read8(uint8_t reg) {
   uint8_t value;

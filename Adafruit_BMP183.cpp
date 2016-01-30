@@ -18,7 +18,7 @@
 #ifdef __AVR__
     #include <util/delay.h>
 #endif
-#ifdef __SAM3X8E__
+#if defined(__SAM3X8E__) || defined(ESP8266)
     #define _delay_ms(t) delay(t)
 #endif
 #include <SPI.h>

@@ -17,11 +17,7 @@
 #ifndef ADAFRUIT_BMP183_H
 #define ADAFRUIT_BMP183_H
 
-#if (ARDUINO >= 100)
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
+#include "Arduino.h"
 #include "SPI.h"
 
 // use the 'default' datasheet numbers to test calculations
@@ -77,6 +73,7 @@ class Adafruit_BMP183 {
   uint32_t readRawPressure();
   
  private:
+  SPIClass *_spi; //!< pointer to SPI object
   uint8_t SPIxfer(uint8_t x);
   uint8_t read8(uint8_t addr);
   uint16_t read16(uint8_t addr);

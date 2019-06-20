@@ -71,9 +71,9 @@ class Adafruit_BMP183 {
   float getAltitude(float sealevelPressure = 101325); // std atmosphere
   uint16_t readRawTemperature();
   uint32_t readRawPressure();
+  SPIClass _spi; //!< pointer to SPI object
   
  private:
-  SPIClass *_spi; //!< pointer to SPI object
   uint8_t SPIxfer(uint8_t x);
   uint8_t read8(uint8_t addr);
   uint16_t read16(uint8_t addr);

@@ -27,9 +27,7 @@
 // use the 'default' datasheet numbers to test calculations
 #define BMP183_DEBUG 0
 
-/*=========================================================================
-    REGISTERS
-    -----------------------------------------------------------------------*/
+    /** Registers **/
     enum
     {
       BMP183_REGISTER_CAL_AC1            = 0xAA,  // R   Calibration data (16 bits)
@@ -52,11 +50,8 @@
       BMP183_REGISTER_READTEMPCMD        = 0x2E,
       BMP183_REGISTER_READPRESSURECMD    = 0x34
     };
-/*=========================================================================*/
 
-/*=========================================================================
-    MODE SETTINGS
-    -----------------------------------------------------------------------*/
+/** Mode Settings **/
     typedef enum
     {
       BMP183_MODE_ULTRALOWPOWER          = 0,
@@ -64,19 +59,22 @@
       BMP183_MODE_HIGHRES                = 2,
       BMP183_MODE_ULTRAHIGHRES           = 3
     } bmp183_mode_t;
-/*=========================================================================*/
 
+/*!
+ *  @brief  Class that stores state and functions for interacting with
+ *          BMP183
+ */
 class Adafruit_BMP183 {
  public:
-  Adafruit_BMP183(int8_t SPICS);
+  Adafruit_BMP183(int8_t SPICS, SPIClass *theSPI = &SPI);
   Adafruit_BMP183(int8_t SPICLK, int8_t SPIMISO, int8_t SPIMOSI, int8_t SPICS);
 
   boolean begin(bmp183_mode_t mode = BMP183_MODE_ULTRAHIGHRES);  // by default go highres
   float getTemperature(void);
   int32_t getPressure(void);
   float getAltitude(float sealevelPressure = 101325); // std atmosphere
-  uint16_t readRawTemperature(void);
-  uint32_t readRawPressure(void);
+  uint16_t readRawTemperature();
+  uint32_t readRawPressure();
   
  private:
   uint8_t SPIxfer(uint8_t x);

@@ -18,17 +18,34 @@
 #ifdef __AVR__
     #include <util/delay.h>
 #endif
-#if defined(__SAM3X8E__) || defined(ESP8266)
-    #define _delay_ms(t) delay(t)
-#endif
+#define _delay_ms(t) delay(t)
 #include <SPI.h>
 
 
-Adafruit_BMP183::Adafruit_BMP183(int8_t SPICS ) {
+/*!
+ *  @brief  Instantiates a new Adafruit_BMP183 class using hardware SPI
+ *  @param  SPICS
+ *          cs pin
+ *  @param  *theSPI
+ *          optional SPI object, defaults to SPI
+ */
+Adafruit_BMP183::Adafruit_BMP183(int8_t SPICS, SPIClass *theSPI) {
   _cs = SPICS;
   _clk = _miso = _mosi = -1; 
+  _spi = theSPI;
 }
 
+/*!
+ *  @brief  Instantiates a new Adafruit_BMP183 class using software SPI
+ *  @param  SPICLK
+ *          SPI chip clock
+ *  @param  SPIMISO
+ *          SPI MISO (Data to microcontroller from sensor)
+ *  @param  SPIMOSI
+ *          SPI MOSI (Data from microcontroller to sensor)
+ *  @param  SPICS
+ *          SPI CS PIN
+ */
 Adafruit_BMP183::Adafruit_BMP183(int8_t SPICLK, 
 				 int8_t SPIMISO, 
 				 int8_t SPIMOSI, 
@@ -39,16 +56,21 @@ Adafruit_BMP183::Adafruit_BMP183(int8_t SPICLK,
   _mosi = SPIMOSI;
 }
 
-
+/*!
+ *  @brief  Setups the HW
+ *  @param  mode
+ *          selected BMP183 mode
+ *  @return true if successful
+ */
 boolean Adafruit_BMP183::begin(bmp183_mode_t mode) {
   if (_clk == -1) {
-    SPI.begin();
-    SPI.setDataMode(SPI_MODE0);
+    _spi->begin();
+    _spi->setDataMode(SPI_MODE0);
 #ifdef __AVR__
-    SPI.setClockDivider(SPI_CLOCK_DIV16);
+    _spi->setClockDivider(SPI_CLOCK_DIV16);
 #endif
 #ifdef __SAM3X8E__
-      SPI.setClockDivider(11); // 8-ish MHz (full! speed!)
+      _spi->setClockDivider(11); // 8-ish MHz (full! speed!)
 #endif
   } else {
     pinMode(_clk, OUTPUT);
@@ -73,7 +95,7 @@ boolean Adafruit_BMP183::begin(bmp183_mode_t mode) {
 
   if (read8(0xD0) != 0x55) return false;
 
-  /* read calibration data */
+  /* Read calibration data */
   ac1 = read16(BMP183_REGISTER_CAL_AC1);
   ac2 = read16(BMP183_REGISTER_CAL_AC2);
   ac3 = read16(BMP183_REGISTER_CAL_AC3);
@@ -102,9 +124,15 @@ boolean Adafruit_BMP183::begin(bmp183_mode_t mode) {
   Serial.print("mc = "); Serial.println(mc, DEC);
   Serial.print("md = "); Serial.println(md, DEC);
 #endif
+
+  return true;
 }
 
-uint16_t Adafruit_BMP183::readRawTemperature(void) {
+/*!
+ * @brief  Reads raw temperature reading
+ * @return Raw Temeperature from BMP183_REGISTER_TEMPDATA.
+ */
+uint16_t Adafruit_BMP183::readRawTemperature() {
   write8(BMP183_REGISTER_CONTROL, BMP183_REGISTER_READTEMPCMD);
   _delay_ms(5);
 #if BMP183_DEBUG == 1
@@ -113,7 +141,11 @@ uint16_t Adafruit_BMP183::readRawTemperature(void) {
   return read16(BMP183_REGISTER_TEMPDATA);
 }
 
-uint32_t Adafruit_BMP183::readRawPressure(void) {
+/*!
+ * @brief  Reads raw pressure reading
+ * @return Raw Pressure from BMP183_REGISTER_PRESSUREDATA
+ */
+uint32_t Adafruit_BMP183::readRawPressure() {
   uint32_t raw;
 
   write8(BMP183_REGISTER_CONTROL, BMP183_REGISTER_READPRESSURECMD + (oversampling << 6));
@@ -147,8 +179,11 @@ uint32_t Adafruit_BMP183::readRawPressure(void) {
   return raw;
 }
 
-
-int32_t Adafruit_BMP183::getPressure(void) {
+/*!
+ *  @brief  Gets the compensated pressure level in hPa
+ *  @return Pressure value in hPa
+ */
+int32_t Adafruit_BMP183::getPressure() {
   int32_t UT, UP, B3, B5, B6, X1, X2, X3, p;
   uint32_t B4, B7;
 
@@ -232,8 +267,11 @@ int32_t Adafruit_BMP183::getPressure(void) {
   return p;
 }
 
-
-float Adafruit_BMP183::getTemperature(void) {
+/*!
+ *  @brief  Reads the temperatures in Celsius degrees
+ *  @return temperature in Celsius
+ */
+float Adafruit_BMP183::getTemperature() {
   int32_t UT, X1, X2, B5;     // following ds convention
   float temp;
 
@@ -258,6 +296,12 @@ float Adafruit_BMP183::getTemperature(void) {
   return temp;
 }
 
+/*!
+ *  @brief  Reads the altitude based on provided sea level pressure
+ *  @param  sealevelPressure
+ *          pressure in hPa
+ *  @return altitude value in meters
+ */
 float Adafruit_BMP183::getAltitude(float sealevelPressure) {
   float altitude;
 
@@ -274,7 +318,7 @@ float Adafruit_BMP183::getAltitude(float sealevelPressure) {
 
 uint8_t Adafruit_BMP183::SPIxfer(uint8_t x) {
   if (_clk == -1) {
-    return SPI.transfer(x);
+    return _spi->transfer(x);
   } else {
     //Serial.println("Software SPI");
     uint8_t reply = 0;

@@ -124,6 +124,8 @@ boolean Adafruit_BMP183::begin(bmp183_mode_t mode) {
   Serial.print("mc = "); Serial.println(mc, DEC);
   Serial.print("md = "); Serial.println(md, DEC);
 #endif
+
+  return true;
 }
 
 /*!

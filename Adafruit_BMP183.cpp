@@ -59,7 +59,7 @@ Adafruit_BMP183::Adafruit_BMP183(int8_t SPICLK,
 /*!
  *  @brief  Setups the HW
  *  @param  mode
- *          selected bmp183 mode
+ *          selected BMP183 mode
  *  @return true if successful
  */
 boolean Adafruit_BMP183::begin(bmp183_mode_t mode) {
@@ -95,7 +95,7 @@ boolean Adafruit_BMP183::begin(bmp183_mode_t mode) {
 
   if (read8(0xD0) != 0x55) return false;
 
-  /* read calibration data */
+  /* Read calibration data */
   ac1 = read16(BMP183_REGISTER_CAL_AC1);
   ac2 = read16(BMP183_REGISTER_CAL_AC2);
   ac3 = read16(BMP183_REGISTER_CAL_AC3);
@@ -181,7 +181,7 @@ uint32_t Adafruit_BMP183::readRawPressure() {
 
 /*!
  *  @brief  Gets the compensated pressure level in hPa
- *  @return pressure value in hPa
+ *  @return Pressure value in hPa
  */
 int32_t Adafruit_BMP183::getPressure() {
   int32_t UT, UP, B3, B5, B6, X1, X2, X3, p;
@@ -268,7 +268,7 @@ int32_t Adafruit_BMP183::getPressure() {
 }
 
 /*!
- *  @brief  Reads the temperatures in degrees Celsius
+ *  @brief  Reads the temperatures in Celsius degrees
  *  @return temperature in Celsius
  */
 float Adafruit_BMP183::getTemperature() {

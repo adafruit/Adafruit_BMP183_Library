@@ -66,8 +66,8 @@ class Adafruit_BMP183 {
   Adafruit_BMP183(int8_t SPICLK, int8_t SPIMISO, int8_t SPIMOSI, int8_t SPICS);
 
   boolean begin(bmp183_mode_t mode = BMP183_MODE_ULTRAHIGHRES);  // by default go highres
-  float getTemperature(void);
-  int32_t getPressure(void);
+  float getTemperature();
+  int32_t getPressure();
   float getAltitude(float sealevelPressure = 101325); // std atmosphere
   uint16_t readRawTemperature();
   uint32_t readRawPressure();

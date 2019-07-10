@@ -27,7 +27,7 @@
  *  @param  SPICS
  *          cs pin
  *  @param  *theSPI
- *          optional SPI object 
+ *          optional SPI object, defaults to SPIClass
  */
 Adafruit_BMP183::Adafruit_BMP183(int8_t SPICS, SPIClass *theSPI) {
   _cs = SPICS;
@@ -36,7 +36,7 @@ Adafruit_BMP183::Adafruit_BMP183(int8_t SPICS, SPIClass *theSPI) {
 }
 
 /*!
- *  @brief  Instantiates a new Adafruit_BMP183 class using hardware SPI
+ *  @brief  Instantiates a new Adafruit_BMP183 class using software SPI
  *  @param  SPICLK
  *          SPI chip clock
  *  @param  SPIMISO
@@ -180,7 +180,7 @@ uint32_t Adafruit_BMP183::readRawPressure() {
 }
 
 /*!
- *  @brief  Gets the compensated pressure level in kPa
+ *  @brief  Gets the compensated pressure level in hPa
  *  @return pressure value in hPa
  */
 int32_t Adafruit_BMP183::getPressure() {

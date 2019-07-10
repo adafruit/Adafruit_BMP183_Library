@@ -27,7 +27,7 @@
  *  @param  SPICS
  *          cs pin
  *  @param  *theSPI
- *          optional SPI object, defaults to SPIClass
+ *          optional SPI object, defaults to SPI
  */
 Adafruit_BMP183::Adafruit_BMP183(int8_t SPICS, SPIClass *theSPI) {
   _cs = SPICS;

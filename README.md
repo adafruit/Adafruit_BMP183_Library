@@ -1,4 +1,4 @@
-# Adafruit BMP183 [![Build Status](https://travis-ci.org/adafruit/Adafruit_Adafruit_BMP183_Unified_Library.svg?branch=master)](https://travis-ci.org/adafruit/Adafruit_BMP183_Unified_Library)
+# Adafruit BMP183 [![Build Status](https://travis-ci.com/adafruit/Adafruit_Adafruit_BMP183_Unified_Library.svg?branch=master)](https://travis-ci.com/adafruit/Adafruit_BMP183_Unified_Library)
 
 This is a library for the Adafruit BMP183 Barometric Pressure + Temp sensor
 

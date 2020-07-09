@@ -16,6 +16,8 @@
  * please support Adafruit and open-source hardware by purchasing
  * products from Adafruit!
  *
+ * If this gets commited from a branch, we have an issue
+ *
  * @section author Author
  *
  * Written by Limor Fried/Ladyada for Adafruit Industries.

@@ -1,5 +1,6 @@
 # Adafruit BMP183 [![Build Status](https://github.com/adafruit/Adafruit_BMP183_Library/workflows/Arduino%20Library%20CI/badge.svg)](https://github.com/adafruit/Adafruit_BMP183_Library/actions)[![Documentation](https://github.com/adafruit/ci-arduino/blob/master/assets/doxygen_badge.svg)](http://adafruit.github.io/Adafruit_BMP183_Library/html/index.html)
 
+[![Compile Examples](https://github.com/adafruit/Adafruit_BMP183_Library/workflows/Compile%20Examples/badge.svg)](https://github.com/adafruit/Adafruit_BMP183_Library/actions?workflow=Compile+Examples)
 
 This is a library for the Adafruit BMP183 Barometric Pressure + Temp sensor
 
